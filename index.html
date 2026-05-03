@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>CookieBot 🍪</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0d;--bg2:#161616;--bg3:#1e1e1e;--bg4:#272727;
+  --text:#f5f0eb;--text2:#9e9690;--text3:#5a5550;
+  --border:rgba(249,115,22,.15);--border2:rgba(249,115,22,.35);
+  --accent:#f97316;--accent2:#ea6c0a;--accent3:#c2550a;
+  --success:#4ade80;--danger:#f87171;--warn:#fbbf24;
+  --radius:12px;--radius-sm:8px;--radius-lg:16px;
+  --font:'Nunito',sans-serif;--mono:'Space Mono',monospace;
+  --glass:rgba(249,115,22,.06);--glass2:rgba(13,13,13,.85);
+  --glow:0 0 20px rgba(249,115,22,.25);
+  --noise:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+}
+.light{
+  --bg:#faf7f4;--bg2:#ffffff;--bg3:#f0ebe4;--bg4:#e8e0d8;
+  --text:#1a1410;--text2:#6b5e52;--text3:#b0a090;
+  --border:rgba(249,115,22,.2);--border2:rgba(249,115,22,.4);
+  --glass:rgba(249,115,22,.06);--glass2:rgba(250,247,244,.9);
+  --glow:0 0 16px rgba(249,115,22,.2);
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;transition:background .3s,color .3s}
+body::before{content:'';position:fixed;inset:0;background:var(--noise);pointer-events:none;z-index:0;opacity:.6}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:940px;margin:0 auto;position:relative;z-index:1}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;
+  background:var(--glass2);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;position:sticky;top:0;z-index:20}
+.topbar-logo{font-size:16px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;gap:8px;color:var(--accent)}
+.logo-cookie{font-size:20px}
+.topbar-nav{display:flex;gap:4px;align-items:center}
+.nav-btn{background:none;border:1px solid transparent;color:var(--text2);padding:7px 13px;
+  border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-family:var(--font);font-weight:600;
+  transition:all .2s;display:flex;align-items:center;gap:6px;white-space:nowrap;letter-spacing:.2px}
+.nav-btn:hover,.nav-btn.active{background:rgba(249,115,22,.12);border-color:var(--accent);color:var(--accent);box-shadow:var(--glow)}
+.nav-icon{font-size:15px}
+.settings-wrap{position:relative}
+.smenu{position:absolute;right:0;top:calc(100% + 8px);
+  background:var(--bg2);backdrop-filter:blur(20px);border:1px solid var(--border2);
+  border-radius:var(--radius-lg);min-width:220px;z-index:50;overflow:hidden;
+  box-shadow:var(--glow),0 8px 32px rgba(0,0,0,.4);
+  transform-origin:top right;transform:scale(.95) translateY(-4px);opacity:0;
+  transition:transform .18s,opacity .18s;pointer-events:none}
+.smenu.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
+.smenu-label{padding:10px 14px 4px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono)}
+.smenu-item{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;transition:background .12s;border:none;background:none;width:100%;font-family:var(--font);text-align:left}
+.smenu-item:hover{background:rgba(249,115,22,.1);color:var(--accent)}
+.smenu-divider{height:1px;background:var(--border);margin:4px 0}
+.theme-row{display:flex;align-items:center;justify-content:space-between;padding:8px 14px}
+.theme-row-label{font-size:12px;color:var(--text2);font-weight:600}
+.theme-btns{display:flex;gap:6px}
+.theme-btn{padding:4px 12px;border-radius:20px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:none;color:var(--text2);font-family:var(--font);font-weight:600;transition:all .15s}
+.theme-btn.active,.theme-btn:hover{background:rgba(249,115,22,.15);border-color:var(--accent);color:var(--accent)}
+
+/* TABS */
+.tab-pane{display:none;flex:1;overflow:hidden;flex-direction:column;min-height:0}
+.tab-pane.active{display:flex}
+
+/* CHAT */
+.chat-area{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+.msg{max-width:80%;padding:11px 15px;border-radius:var(--radius);font-size:14px;line-height:1.65;word-break:break-word}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-bottom-right-radius:3px;box-shadow:var(--glow);font-weight:500}
+.msg.agent{align-self:flex-start;background:var(--bg3);border:1px solid var(--border);border-bottom-left-radius:3px}
+.msg.agent strong{color:var(--accent)}
+.empty-chat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center}
+.empty-icon{font-size:48px;filter:drop-shadow(0 0 20px rgba(249,115,22,.4))}
+.empty-chat p{font-size:14px;max-width:300px;line-height:1.7;color:var(--text2)}
+.suggestions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+.sug-btn{background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font);font-weight:600;transition:all .2s}
+.sug-btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:var(--glow)}
+.typing{display:flex;gap:5px;align-items:center;padding:4px 0}
+.typing span{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:bounce .8s infinite;opacity:.5}
+.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* CONFIRM CARD */
+.confirm-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px;margin:6px 0;font-size:13px}
+.confirm-card h4{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;font-family:var(--mono)}
+.confirm-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)}
+.confirm-row:last-of-type{border:none}
+.confirm-row .lbl{color:var(--text2);font-size:12px}.confirm-row .val{font-weight:600;font-family:var(--mono);font-size:12px}
+.confirm-row .val.pos{color:var(--success)}.confirm-row .val.neg{color:var(--danger)}.confirm-row .val.ora{color:var(--accent)}
+.confirm-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn{padding:8px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:13px;font-family:var(--font);font-weight:700;transition:all .15s;letter-spacing:.2px}
+.btn-confirm{background:var(--success);color:#000}.btn-confirm:hover{filter:brightness(1.1)}
+.btn-cancel{background:var(--bg4);color:var(--text);border:1px solid var(--border)}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:var(--glow)}.btn-primary:hover{background:var(--accent2)}
+.btn-warn{background:var(--warn);color:#000}.btn-warn:hover{filter:brightness(1.1)}
+
+/* INPUT BAR */
+.input-bar{padding:12px 14px;background:var(--glass2);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0}
+.input-wrap{flex:1;min-width:0}
+#file-preview{font-size:12px;color:var(--accent);padding:3px 0 5px;display:flex;align-items:center;gap:5px;font-family:var(--mono)}
+#file-preview button{background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0}
+#msg-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:10px 14px;color:var(--text);font-family:var(--font);font-size:14px;resize:none;
+  min-height:42px;max-height:120px;outline:none;transition:all .2s;line-height:1.5;font-weight:500}
+#msg-input:focus{border-color:var(--accent);box-shadow:var(--glow)}
+#msg-input::placeholder{color:var(--text3)}
+.icon-btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  width:42px;height:42px;cursor:pointer;color:var(--text2);transition:all .2s;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:var(--glow)}
+.icon-btn.recording{border-color:var(--danger);animation:pulse 1s infinite}
+.send-btn{background:var(--accent);border:none;border-radius:var(--radius-sm);
+  width:42px;height:42px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:all .2s;box-shadow:var(--glow);font-size:16px}
+.send-btn:hover{background:var(--accent2)}.send-btn:disabled{opacity:.4;cursor:not-allowed}
+#file-input{display:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* DASHBOARD */
+.dash-area{flex:1;overflow-y:auto;padding:18px;-webkit-overflow-scrolling:touch}
+.dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.dash-title{font-size:18px;font-weight:800;color:var(--accent)}
+.dash-actions{display:flex;gap:8px}
+.date-wrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.date-field{position:relative;display:flex;align-items:center}
+.date-field input[type=date]{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:7px 10px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;width:140px;cursor:pointer;transition:all .2s}
+.date-field input[type=date]:focus{border-color:var(--accent)}
+input[type=date]{color-scheme:dark}.light input[type=date]{color-scheme:light}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.kpi-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;transition:all .2s;cursor:default}
+.kpi-card:hover{border-color:var(--border2);box-shadow:var(--glow)}
+.kpi-label{font-size:10px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px;font-family:var(--mono)}
+.kpi-val{font-size:22px;font-weight:800;font-family:var(--mono)}
+.kpi-val.pos{color:var(--success)}.kpi-val.neg{color:var(--danger)}.kpi-val.ora{color:var(--accent)}.kpi-val.neu{color:var(--text)}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+@media(max-width:560px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;overflow:hidden}
+.chart-card h3{font-size:11px;font-weight:700;color:var(--text3);margin-bottom:12px;text-transform:uppercase;letter-spacing:.8px;font-family:var(--mono)}
+.line-svg{width:100%;overflow:visible}
+.donut-wrap{display:flex;align-items:center;gap:12px;min-height:140px}
+.donut-legend{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.donut-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);padding:3px 4px;border-radius:6px;transition:background .12s;cursor:pointer;font-weight:600}
+.donut-item:hover{background:var(--glass)}
+.donut-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.donut-val{margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--mono)}
+.recent-list{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:18px}
+.recent-list h3{font-size:11px;font-weight:700;color:var(--text3);padding:14px 16px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.8px;font-family:var(--mono)}
+.recent-item{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;transition:background .12s}
+.recent-item:last-child{border:none}
+.recent-item:hover{background:var(--glass)}
+.ri-left{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;margin-right:12px}
+.ri-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-meta{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.ri-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.ri-val{font-weight:700;font-size:13px;font-family:var(--mono)}
+.ri-status{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;font-family:var(--mono)}
+.badge-pago{background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.3)}
+.badge-pendente{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.3)}
+.nf-link{font-size:10px;color:var(--accent);cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:3px}
+.nf-link:hover{text-decoration:underline}
+
+/* ESTOQUE */
+.estoque-area{flex:1;overflow-y:auto;padding:18px;-webkit-overflow-scrolling:touch}
+.estoque-table{width:100%;border-collapse:collapse;font-size:13px}
+.estoque-table th{text-align:left;padding:10px 12px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-family:var(--mono);font-weight:700;border-bottom:2px solid var(--border);white-space:nowrap}
+.estoque-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.estoque-table tr:hover td{background:var(--glass)}
+.estoque-table tr:last-child td{border-bottom:none}
+.badge-ok{color:var(--success);font-weight:700;font-family:var(--mono)}
+.badge-low{color:var(--danger);font-weight:700;font-family:var(--mono)}
+.badge-zero{color:var(--text3);font-family:var(--mono)}
+.section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-family:var(--mono);margin-bottom:12px;margin-top:20px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.compras-list{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.compra-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;transition:all .2s}
+.compra-item:hover{border-color:var(--border2)}
+.compra-left{flex:1;min-width:0}
+.compra-nome{font-weight:700;font-size:14px;margin-bottom:3px}
+.compra-meta{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.compra-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.compra-val{font-weight:700;font-family:var(--mono);color:var(--accent);font-size:14px}
+.compra-nf{font-size:10px;color:var(--text3)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);width:100%;max-width:420px;padding:24px;box-shadow:var(--glow),0 16px 48px rgba(0,0,0,.7)}
+.modal h2{font-size:16px;font-weight:800;margin-bottom:6px}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.7}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:10px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px;font-family:var(--mono)}
+.field input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:all .2s}
+.field input:focus{border-color:var(--accent);box-shadow:var(--glow)}
+.modal-footer{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
+.hidden{display:none!important}
+.loading-dash{text-align:center;padding:50px;color:var(--text2);font-size:14px;font-family:var(--mono)}
+.chart-tooltip{position:fixed;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:9px 13px;font-size:12px;color:var(--text);pointer-events:none;z-index:200;display:none;box-shadow:var(--glow);line-height:1.6;font-family:var(--mono)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px;opacity:.6}
+
+@media(max-width:500px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .msg{max-width:90%}
+  .nav-btn .nav-label{display:none}
+  .nav-btn{padding:7px 8px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <span class="logo-cookie">🍪</span>
+      CookieBot
+    </div>
+    <div class="topbar-nav">
+      <button class="nav-btn active" onclick="showTab('chat')" id="tab-chat">
+        <span class="nav-icon">💬</span><span class="nav-label">Agente</span>
+      </button>
+      <button class="nav-btn" onclick="showTab('dash')" id="tab-dash">
+        <span class="nav-icon">📊</span><span class="nav-label">Vendas</span>
+      </button>
+      <button class="nav-btn" onclick="showTab('estoque')" id="tab-estoque">
+        <span class="nav-icon">📦</span><span class="nav-label">Estoque</span>
+      </button>
+      <div class="settings-wrap">
+        <button class="nav-btn" onclick="toggleSmenu(event)" id="smenu-btn">
+          <span class="nav-icon">⚙️</span>
+        </button>
+        <div class="smenu" id="smenu">
+          <div class="smenu-label">Tema</div>
+          <div class="theme-row">
+            <span class="theme-row-label">Aparência</span>
+            <div class="theme-btns">
+              <button class="theme-btn active" id="tb-dark" onclick="setTheme('dark')">Dark</button>
+              <button class="theme-btn" id="tb-light" onclick="setTheme('light')">Light</button>
+            </div>
+          </div>
+          <div class="smenu-divider"></div>
+          <button class="smenu-item" onclick="openKeysModal()">🔑 API Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GUIA 1: CHAT/AGENTE -->
+  <div class="tab-pane active" id="pane-chat">
+    <div class="chat-area" id="chat-area">
+      <div class="empty-chat" id="empty-state">
+        <div class="empty-icon">🍪</div>
+        <p>Oi! Me fala sobre vendas, produção ou compras de ingredientes.</p>
+        <div class="suggestions">
+          <button class="sug-btn" onclick="suggest('Vendi 3 Nutella pra Carol')">Vendi cookies</button>
+          <button class="sug-btn" onclick="suggest('Fiz uma receita de Red Velvet hoje')">Produzi cookies</button>
+          <button class="sug-btn" onclick="suggest('Comprei ingredientes')">📎 Comprei ingredientes (NF)</button>
+          <button class="sug-btn" onclick="suggest('Quanto faturei esse mês?')">📊 Faturamento do mês</button>
+          <button class="sug-btn" onclick="suggest('Qual sabor vendeu mais?')">📊 Sabor top</button>
+          <button class="sug-btn" onclick="suggest('Como está meu estoque?')">📦 Estoque atual</button>
+          <button class="sug-btn" onclick="suggest('Me fala a receita de Red Velvet')">📋 Receita</button>
+        </div>
+      </div>
+    </div>
+    <div class="input-bar">
+      <button class="icon-btn" onclick="document.getElementById('file-input').click()" title="Foto / NF">📷</button>
+      <input type="file" id="file-input" accept="image/*,.pdf" capture="environment" onchange="handleFile(this)">
+      <div class="input-wrap">
+        <div id="file-preview" class="hidden"></div>
+        <textarea id="msg-input" placeholder="Ex: vendi 2 Kinder Bueno pra João..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"
+          oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="icon-btn" id="mic-btn" onclick="toggleMic()" title="Voz">🎤</button>
+      <button class="send-btn" id="send-btn" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+
+  <!-- GUIA 2: DASHBOARD VENDAS -->
+  <div class="tab-pane" id="pane-dash">
+    <div class="dash-area">
+      <div class="dash-header">
+        <div class="dash-title">Dashboard · Vendas</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="date-wrap">
+            <input type="date" id="f-start" onchange="renderDash()">
+            <span style="color:var(--text3);font-size:12px">→</span>
+            <input type="date" id="f-end" onchange="renderDash()">
+          </div>
+          <button class="btn btn-primary" onclick="loadDashData()" style="font-size:12px;padding:7px 14px;height:34px">↻</button>
+        </div>
+      </div>
+      <div id="dash-content"><div class="loading-dash">Carregando...</div></div>
+    </div>
+  </div>
+
+  <!-- GUIA 3: ESTOQUE -->
+  <div class="tab-pane" id="pane-estoque">
+    <div class="estoque-area">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="dash-title">Estoque & Compras</div>
+        <button class="btn btn-primary" onclick="loadEstoqueData()" style="font-size:12px;padding:7px 14px">↻</button>
+      </div>
+      <div id="estoque-content"><div class="loading-dash">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KEYS -->
+<div class="modal-overlay hidden" id="keys-modal">
+  <div class="modal">
+    <h2>🔑 API Settings</h2>
+    <p>Chaves salvas localmente no navegador.</p>
+    <div class="field"><label>Notion Token</label><input type="password" id="s-ntoken" placeholder="ntn_..."></div>
+    <div class="field"><label>Gemini API Key</label><input type="password" id="s-gkey" placeholder="AIza..."></div>
+    <div class="field"><label>ImgBB API Key <span style="font-weight:400;color:var(--text3)">(para upload de NF)</span></label><input type="password" id="s-imgbb" placeholder="..."></div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeKeysModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveKeys()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMG MODAL -->
+<div id="img-modal" onclick="this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);align-items:center;justify-content:center">
+  <button onclick="event.stopPropagation();document.getElementById('img-modal').style.display='none'" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,.1);border:none;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px">✕</button>
+  <img id="img-modal-img" onclick="event.stopPropagation()" style="max-width:92vw;max-height:88vh;border-radius:10px;object-fit:contain">
+</div>
+
+<div class="chart-tooltip" id="chart-tip"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONSTANTES — IDs do Notion
+// ═══════════════════════════════════════════
+const DB_VENDAS    = '354b11b0-fd29-8051-af3a-000b98c43aa9';
+const DB_PRODUCAO  = '354b11b0-fd29-80e7-ae04-000bc35abda2';
+const DB_ESTOQUE   = '354b11b0-fd29-80c0-aae0-000b6e38c6ca';
+const DB_RECEITA   = '354b11b0-fd29-8040-8a6f-000bd3526710';
+const DB_PRODUTOS  = '58c94bb2-38fa-4726-94e5-69efa59b98ca';
+
+const SABORES = ['Nutella','Kinder Bueno','Red Velvet'];
+const DOT_COLORS = ['#f97316','#4ade80','#f87171','#fbbf24','#60a5fa','#e879f9','#34d399'];
+
+// ═══════════════════════════════════════════
+// CONFIG / AUTH
+// ═══════════════════════════════════════════
+let cfg = { token:'', gemini:'', imgbb:'' };
+
+function loadCfg(){
+  const s = localStorage.getItem('cbot_cfg');
+  if(s){ const p=JSON.parse(s); cfg.token=p.token||''; cfg.gemini=p.gemini||''; cfg.imgbb=p.imgbb||''; }
+}
+function saveCfg(){ localStorage.setItem('cbot_cfg', JSON.stringify(cfg)); }
+function openKeysModal(){
+  document.getElementById('s-ntoken').value = cfg.token;
+  document.getElementById('s-gkey').value = cfg.gemini;
+  document.getElementById('s-imgbb').value = cfg.imgbb;
+  document.getElementById('keys-modal').classList.remove('hidden');
+  document.getElementById('smenu').classList.remove('open');
+}
+function closeKeysModal(){ document.getElementById('keys-modal').classList.add('hidden'); }
+function saveKeys(){
+  cfg.token = document.getElementById('s-ntoken').value.trim();
+  cfg.gemini = document.getElementById('s-gkey').value.trim();
+  cfg.imgbb = document.getElementById('s-imgbb').value.trim();
+  saveCfg(); closeKeysModal();
+  addMsg('agent','✅ Chaves salvas!');
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.onload = () => {
+  loadCfg();
+  const t = localStorage.getItem('cbot_theme') || 'dark';
+  setTheme(t, true);
+  const y = new Date().getFullYear();
+  const si=document.getElementById('f-start'), ei=document.getElementById('f-end');
+  if(si) si.value=`${y}-01-01`;
+  if(ei) ei.value=`${y}-12-31`;
+  loadDashData();
+  loadEstoqueData();
+  document.addEventListener('click', e=>{
+    if(!e.target.closest('.settings-wrap')) document.getElementById('smenu').classList.remove('open');
+  });
+};
+
+function setTheme(t, silent){
+  document.body.classList.remove('light');
+  if(t==='light') document.body.classList.add('light');
+  localStorage.setItem('cbot_theme', t);
+  document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));
+  const tb=document.getElementById('tb-'+t); if(tb) tb.classList.add('active');
+  if(!silent) document.getElementById('smenu').classList.remove('open');
+}
+function toggleSmenu(e){ e.stopPropagation(); document.getElementById('smenu').classList.toggle('open'); }
+function showTab(t){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pane-'+t).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='dash') loadDashData();
+  if(t==='estoque') loadEstoqueData();
+}
+
+// ═══════════════════════════════════════════
+// NOTION API
+// ═══════════════════════════════════════════
+async function notionReq(method, path, body){
+  const payload = { _path: path, ...(body||{}) };
+  const res = await fetch('/api/notion', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'x-notion-token': cfg.token },
+    body: JSON.stringify(payload)
+  });
+  const d = await res.json();
+  if(d.object==='error') throw new Error(d.message);
+  return d;
+}
+
+async function notionPatch(pageId, props){
+  const res = await fetch('/api/notion', {
+    method: 'PATCH',
+    headers: { 'Content-Type':'application/json', 'x-notion-token': cfg.token },
+    body: JSON.stringify({ _path: `pages/${pageId}`, properties: props })
+  });
+  return res.json();
+}
+
+// ═══════════════════════════════════════════
+// CHAT UI
+// ═══════════════════════════════════════════
+let attachedFile=null, attachedB64=null;
+let recognition=null, isRecording=false;
+
+function addMsg(role, html, id){
+  const area=document.getElementById('chat-area');
+  document.getElementById('empty-state')?.remove();
+  const div=document.createElement('div');
+  div.className='msg '+role; if(id) div.id=id;
+  div.innerHTML=html; area.appendChild(div);
+  area.scrollTop=area.scrollHeight; return div;
+}
+function addTyping(){ return addMsg('agent','<div class="typing"><span></span><span></span><span></span></div>','typing-indicator'); }
+function removeTyping(){ document.getElementById('typing-indicator')?.remove(); }
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+function suggest(t){ document.getElementById('msg-input').value=t; document.getElementById('msg-input').focus(); }
+function handleFile(input){
+  const f=input.files[0]; if(!f) return;
+  attachedFile=f;
+  const prev=document.getElementById('file-preview'); prev.classList.remove('hidden');
+  prev.innerHTML=`📎 ${f.name} <button onclick="removeFile()">✕</button>`;
+  const r=new FileReader(); r.onload=e=>{ attachedB64=e.target.result.split(',')[1]; }; r.readAsDataURL(f);
+}
+function removeFile(){
+  attachedFile=null; attachedB64=null;
+  document.getElementById('file-preview').classList.add('hidden');
+  document.getElementById('file-input').value='';
+}
+function toggleMic(){
+  const btn=document.getElementById('mic-btn');
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){ alert('Navegador não suporta voz.'); return; }
+  if(isRecording){ recognition.stop(); return; }
+  recognition=new SR(); recognition.lang='pt-BR'; recognition.continuous=false; recognition.interimResults=false;
+  recognition.onstart=()=>{ isRecording=true; btn.classList.add('recording'); };
+  recognition.onresult=e=>{ const t=e.results[0][0].transcript; const inp=document.getElementById('msg-input'); inp.value=(inp.value+' '+t).trim(); autoResize(inp); };
+  recognition.onend=()=>{ isRecording=false; btn.classList.remove('recording'); };
+  recognition.onerror=()=>{ isRecording=false; btn.classList.remove('recording'); };
+  recognition.start();
+}
+
+// ═══════════════════════════════════════════
+// GEMINI — CLASSIFICAÇÃO
+// ═══════════════════════════════════════════
+const SYS_CLASSIFY = `Classifique a mensagem em UMA das categorias: venda | producao | compra | analise
+venda = registrar venda de cookies para cliente
+producao = registrar que fez/produziu/assou/hornear uma receita/lote
+compra = comprou ingredientes (pode ter foto de NF/nota fiscal)
+analise = perguntas, análises, consultas, receitas, previsões
+Responda SOMENTE a palavra, sem nada mais.`;
+
+async function classifyMsg(text){
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cfg.gemini}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ contents:[{role:'user',parts:[{text: SYS_CLASSIFY+'\nMensagem: "'+text+'"'}]}] })
+  });
+  const d = await res.json();
+  const r = (d.candidates?.[0]?.content?.parts?.[0]?.text||'analise').trim().toLowerCase();
+  if(r.includes('venda')) return 'venda';
+  if(r.includes('produc')) return 'producao';
+  if(r.includes('compra')) return 'compra';
+  return 'analise';
+}
+
+// ═══════════════════════════════════════════
+// GEMINI — EXTRAÇÃO VENDA
+// ═══════════════════════════════════════════
+const SYS_VENDA = `Você extrai dados de venda de cookies. Retorne SOMENTE JSON válido, sem markdown.
+Sabores disponíveis: Nutella, Kinder Bueno, Red Velvet.
+Retorne array: [{"cliente":"nome ou vazio","sabor":"Nutella|Kinder Bueno|Red Velvet","quantidade":1,"status":"Pago|Pendente"}]
+Se não souber cliente, use "".
+Hoje: ${new Date().toISOString().split('T')[0]}`;
+
+async function extractVenda(text){
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cfg.gemini}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ system_instruction:{parts:[{text:SYS_VENDA}]}, contents:[{role:'user',parts:[{text}]}] })
+  });
+  const d = await res.json();
+  let raw = d.candidates?.[0]?.content?.parts?.[0]?.text||'[]';
+  raw = raw.replace(/```json|```/g,'').trim();
+  return JSON.parse(raw);
+}
+
+// ═══════════════════════════════════════════
+// GEMINI — EXTRAÇÃO PRODUÇÃO
+// ═══════════════════════════════════════════
+const SYS_PRODUCAO = `Você extrai dados de produção de cookies. Retorne SOMENTE JSON válido, sem markdown.
+Sabores disponíveis: Nutella, Kinder Bueno, Red Velvet.
+Cada receita = 12 unidades.
+Retorne: {"sabor":"Nutella|Kinder Bueno|Red Velvet","quantidade_receitas":1}
+quantidade_receitas = quantas receitas (lotes de 12) foram feitas. Se não informado, assuma 1.`;
+
+async function extractProducao(text){
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cfg.gemini}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ system_instruction:{parts:[{text:SYS_PRODUCAO}]}, contents:[{role:'user',parts:[{text}]}] })
+  });
+  const d = await res.json();
+  let raw = d.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
+  raw = raw.replace(/```json|```/g,'').trim();
+  return JSON.parse(raw);
+}
+
+// ═══════════════════════════════════════════
+// GEMINI — EXTRAÇÃO COMPRA (NF)
+// ═══════════════════════════════════════════
+const SYS_COMPRA = `Você extrai dados de compra de ingredientes de uma nota fiscal ou texto.
+Retorne SOMENTE JSON válido, sem markdown.
+Retorne array: [{"ingrediente":"nome do ingrediente","quantidade":valor_numerico,"unidade":"g|ml|un","preco_total":valor_em_reais}]
+- quantidade deve ser o peso/volume/quantidade comprado
+- se vier em kg, converta para g. Se vier em L, converta para ml.
+- preco_total é o valor pago por aquele item
+- Se vier foto de NF, extraia todos os itens relevantes (ignore itens não alimentícios genéricos)
+Não inclua o campo url_nf (será adicionado depois).`;
+
+async function extractCompra(text, fileData){
+  const parts = [];
+  if(text) parts.push({text});
+  if(fileData){ parts.push({inline_data:{mime_type:fileData.type,data:fileData.b64}}); parts.push({text:'Nota fiscal acima. Extraia ingredientes, quantidades e valores.'}); }
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cfg.gemini}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ system_instruction:{parts:[{text:SYS_COMPRA}]}, contents:[{role:'user',parts}] })
+  });
+  const d = await res.json();
+  let raw = d.candidates?.[0]?.content?.parts?.[0]?.text||'[]';
+  raw = raw.replace(/```json|```/g,'').trim();
+  return JSON.parse(raw);
+}
+
+// ═══════════════════════════════════════════
+// GEMINI — ANÁLISE
+// ═══════════════════════════════════════════
+async function runAnalise(q){
+  addTyping();
+  try{
+    // Busca dados das 3 bases
+    const [vendas, producao, estoque] = await Promise.all([
+      notionReq('POST',`databases/${DB_VENDAS}/query`,{page_size:200}),
+      notionReq('POST',`databases/${DB_PRODUCAO}/query`,{page_size:200}),
+      notionReq('POST',`databases/${DB_ESTOQUE}/query`,{page_size:200}),
+    ]);
+
+    const vRows = vendas.results.map(p=>({
+      cliente: p.properties['Cliente']?.rich_text?.[0]?.plain_text||'',
+      sabor: p.properties['Produtos']?.relation?.[0]?.id||'',
+      qtd: p.properties['Quantidade']?.number||0,
+      status: p.properties['Status Pagamento']?.select?.name||'',
+      data: p.created_time?.split('T')[0]||''
+    }));
+    const pRows = producao.results.map(p=>({
+      lote: p.properties['Lote']?.title?.[0]?.plain_text||'',
+      qtd: p.properties['Quantidade Produzida']?.number||0,
+      data: p.created_time?.split('T')[0]||''
+    }));
+    const eRows = estoque.results.map(p=>({
+      ingrediente: p.properties['Ingrediente']?.title?.[0]?.plain_text||'',
+      estoque: p.properties['Estoque comprado']?.number||0,
+      minimo: p.properties['Estoque mínimo']?.number||0,
+      unidade: p.properties['Unidade']?.select?.name||'',
+      custo_un: '' // fórmula, não disponível via API diretamente
+    }));
+
+    const prompt = `Você é um assistente de negócios para uma mini vendinha de cookies artesanais.
+Responda em português, de forma direta e útil.
+Cookies vendidos a R$15 cada. Sabores: Nutella, Kinder Bueno, Red Velvet.
+Cada receita/lote = 12 cookies.
+FORMATO: resposta direta, use emojis quando ajudar, finalize com "💡 Dica:" quando relevante.
+Data atual: ${new Date().toISOString().split('T')[0]}
+Pergunta: "${q}"
+Vendas (${vRows.length}): ${JSON.stringify(vRows.slice(0,50))}
+Produções (${pRows.length}): ${JSON.stringify(pRows.slice(0,30))}
+Estoque atual: ${JSON.stringify(eRows)}`;
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cfg.gemini}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}]})
+    });
+    const d = await res.json();
+    if(d.error) throw new Error(d.error.message);
+    let ans = d.candidates?.[0]?.content?.parts?.[0]?.text||'Não consegui analisar.';
+    ans = ans.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+    removeTyping(); addMsg('agent', ans);
+  } catch(e){ removeTyping(); addMsg('agent','⚠️ Erro na análise: '+e.message); }
+}
+
+// ═══════════════════════════════════════════
+// SEND MESSAGE — ORQUESTRADOR
+// ═══════════════════════════════════════════
+let pendingAction = null;
+
+async function sendMsg(){
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if(!text && !attachedFile) return;
+  const btn = document.getElementById('send-btn'); btn.disabled=true;
+  let disp = text; if(attachedFile) disp += (text?' ':'')+'📎 '+attachedFile.name;
+  addMsg('user', disp);
+  input.value=''; input.style.height='auto';
+  const fd = attachedFile ? {name:attachedFile.name, b64:attachedB64, type:attachedFile.type} : null;
+  removeFile(); addTyping();
+  try{
+    // Se tem arquivo, provavelmente é compra de NF
+    let tipo = 'analise';
+    if(fd) tipo = 'compra';
+    else tipo = await classifyMsg(text);
+
+    removeTyping();
+    if(tipo==='analise'){ await runAnalise(text); }
+    else if(tipo==='venda'){ await fluxoVenda(text); }
+    else if(tipo==='producao'){ await fluxoProducao(text); }
+    else if(tipo==='compra'){ await fluxoCompra(text, fd); }
+  } catch(e){ removeTyping(); addMsg('agent','⚠️ Erro: '+e.message); }
+  btn.disabled=false;
+}
+
+// ═══════════════════════════════════════════
+// FLUXO VENDA
+// ═══════════════════════════════════════════
+async function fluxoVenda(text){
+  addTyping();
+  const entries = await extractVenda(text);
+  removeTyping();
+  if(!entries||!entries.length){ addMsg('agent','Não entendi a venda. Ex: <em>"vendi 2 Nutella pra Carol"</em>'); return; }
+  let html = `<strong>🧾 Confirmar ${entries.length} venda(s):</strong>`;
+  entries.forEach((e,i)=>{
+    const total = e.quantidade * 15;
+    html += `<div class="confirm-card">
+      <h4>Venda ${i+1}</h4>
+      <div class="confirm-row"><span class="lbl">Sabor</span><span class="val ora">${e.sabor}</span></div>
+      <div class="confirm-row"><span class="lbl">Quantidade</span><span class="val">${e.quantidade} un</span></div>
+      <div class="confirm-row"><span class="lbl">Cliente</span><span class="val">${e.cliente||'—'}</span></div>
+      <div class="confirm-row"><span class="lbl">Status</span><span class="val ${e.status==='Pago'?'pos':'neg'}">${e.status}</span></div>
+      <div class="confirm-row"><span class="lbl">Total</span><span class="val pos">R$ ${total.toFixed(2)}</span></div>
+    </div>`;
+  });
+  html += `<div class="confirm-actions">
+    <button class="btn btn-confirm" onclick="confirmarVenda(${JSON.stringify(entries).replace(/"/g,'&quot;')})">✓ Confirmar</button>
+    <button class="btn btn-cancel" onclick="cancelar(this)">✕ Cancelar</button>
+  </div>`;
+  addMsg('agent', html);
+}
+
+async function confirmarVenda(entries){
+  const last = [...document.querySelectorAll('.msg.agent')].at(-1);
+  last.querySelector('.confirm-actions').innerHTML = '<em style="color:var(--text2);font-size:12px">Salvando...</em>';
+  let ok=0, errs=[];
+  for(const e of entries){
+    try{
+      // Busca ID do produto pelo sabor
+      const prods = await notionReq('POST',`databases/${DB_PRODUTOS}/query`,{
+        filter:{property:'Sabor',title:{equals:e.sabor}},page_size:1
+      });
+      const prodId = prods.results?.[0]?.id;
+      const props = {
+        'Name':{title:[{text:{content:`${e.sabor} — ${e.cliente||'Cliente'} — ${new Date().toLocaleDateString('pt-BR')}`}}]},
+        'Quantidade':{number:e.quantidade},
+        'Status Pagamento':{select:{name:e.status}},
+      };
+      if(e.cliente) props['Cliente']={rich_text:[{text:{content:e.cliente}}]};
+      if(prodId) props['Produtos']={relation:[{id:prodId}]};
+      await notionReq('POST','pages',{parent:{database_id:DB_VENDAS},properties:props});
+      ok++;
+    } catch(err){ errs.push(e.sabor+': '+err.message); }
+  }
+  last.innerHTML = ok>0
+    ? `✅ <strong>${ok}</strong> venda(s) registrada(s)!${errs.length?' ⚠️ '+errs.join(', '):''}`
+    : `⚠️ Erro: ${errs.join(', ')}`;
+  if(ok>0) loadDashData();
+}
+
+// ═══════════════════════════════════════════
+// FLUXO PRODUÇÃO
+// ═══════════════════════════════════════════
+async function fluxoProducao(text){
+  addTyping();
+  const ext = await extractProducao(text);
+  removeTyping();
+  if(!ext.sabor){ addMsg('agent','Não entendi qual sabor foi produzido. Ex: <em>"fiz uma receita de Nutella"</em>'); return; }
+  const qtdCookies = (ext.quantidade_receitas||1) * 12;
+  let html = `<div class="confirm-card">
+    <h4>🍪 Produção</h4>
+    <div class="confirm-row"><span class="lbl">Sabor</span><span class="val ora">${ext.sabor}</span></div>
+    <div class="confirm-row"><span class="lbl">Receitas</span><span class="val">${ext.quantidade_receitas||1} lote(s)</span></div>
+    <div class="confirm-row"><span class="lbl">Cookies</span><span class="val pos">${qtdCookies} unidades</span></div>
+    <div class="confirm-row"><span class="lbl">⚠️ Estoque</span><span class="val neg">ingredientes serão deduzidos</span></div>
+  </div>
+  <div class="confirm-actions">
+    <button class="btn btn-confirm" onclick="confirmarProducao('${ext.sabor}',${ext.quantidade_receitas||1})">✓ Confirmar</button>
+    <button class="btn btn-cancel" onclick="cancelar(this)">✕ Cancelar</button>
+  </div>`;
+  addMsg('agent', html);
+}
+
+async function confirmarProducao(sabor, qtdReceitas){
+  const last = [...document.querySelectorAll('.msg.agent')].at(-1);
+  last.querySelector('.confirm-actions').innerHTML = '<em style="color:var(--text2);font-size:12px">Salvando e deduzindo estoque...</em>';
+  try{
+    // 1. Busca produto
+    const prods = await notionReq('POST',`databases/${DB_PRODUTOS}/query`,{
+      filter:{property:'Sabor',title:{equals:sabor}},page_size:1
+    });
+    const prodId = prods.results?.[0]?.id;
+
+    // 2. Registra produção
+    const props = {
+      'Lote':{title:[{text:{content:`${sabor} — ${new Date().toLocaleDateString('pt-BR')}`}}]},
+      'Quantidade Produzida':{number:qtdReceitas*12},
+    };
+    if(prodId) props['Produtos']={relation:[{id:prodId}]};
+    await notionReq('POST','pages',{parent:{database_id:DB_PRODUCAO},properties:props});
+
+    // 3. Deduz estoque — busca receita base do sabor
+    const saborMap = {'Nutella':'Nutella','Kinder Bueno':'Kinder Bueno','Red Velvet':'Red Velvet'};
+    const receitas = await notionReq('POST',`databases/${DB_RECEITA}/query`,{
+      filter:{property:'Sabor',multi_select:{contains:saborMap[sabor]||sabor}},
+      page_size:50
+    });
+
+    let deduzidos = 0;
+    for(const rec of receitas.results){
+      const qtdPorReceita = rec.properties['Qtd por receita (12 cookies)']?.number||0;
+      const estoqueRel = rec.properties['Estoque']?.relation||[];
+      if(!estoqueRel.length || !qtdPorReceita) continue;
+      for(const estoqueRef of estoqueRel){
+        // Busca estoque atual
+        const estoqueItem = await notionReq('GET',`pages/${estoqueRef.id}`,null);
+        const estoqueAtual = estoqueItem.properties?.['Estoque comprado']?.number||0;
+        const novoEstoque = Math.max(0, estoqueAtual - (qtdPorReceita * qtdReceitas));
+        // Atualiza
+        await notionPatch(estoqueRef.id,{'Estoque comprado':{number:novoEstoque}});
+        deduzidos++;
+      }
+    }
+    last.innerHTML = `✅ Produção registrada! <strong>${qtdReceitas*12} cookies</strong> de ${sabor}.<br><span style="font-size:12px;color:var(--text3)">🔻 ${deduzidos} ingrediente(s) deduzido(s) do estoque.</span>`;
+    loadEstoqueData();
+  } catch(e){ last.innerHTML='⚠️ Erro ao registrar: '+e.message; }
+}
+
+// ═══════════════════════════════════════════
+// FLUXO COMPRA (com NF)
+// ═══════════════════════════════════════════
+let pendingCompra = null;
+let pendingNfUrl = null;
+
+async function fluxoCompra(text, fileData){
+  addTyping();
+  let nfUrl = null;
+  // Upload da NF se tiver imagem
+  if(fileData){
+    try{
+      const up = await fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name:fileData.name,data:fileData.b64,apiKey:cfg.imgbb})});
+      const upData = await up.json();
+      if(upData.url) nfUrl = upData.url;
+    } catch(e){ /* upload opcional, continua */ }
+  }
+  const entries = await extractCompra(text, fileData);
+  removeTyping();
+  if(!entries||!entries.length){ addMsg('agent','Não consegui extrair os ingredientes. Tente descrever ou enviar a foto da NF.'); return; }
+  pendingNfUrl = nfUrl;
+  let html = `<strong>📦 Confirmar compra de ${entries.length} ingrediente(s):</strong>`;
+  if(nfUrl) html += `<br><a class="nf-link" href="${nfUrl}" target="_blank">🧾 Ver NF</a>`;
+  entries.forEach((e,i)=>{
+    html += `<div class="confirm-card">
+      <h4>Item ${i+1}</h4>
+      <div class="confirm-row"><span class="lbl">Ingrediente</span><span class="val ora">${e.ingrediente}</span></div>
+      <div class="confirm-row"><span class="lbl">Quantidade</span><span class="val">${e.quantidade} ${e.unidade}</span></div>
+      <div class="confirm-row"><span class="lbl">Preço total</span><span class="val pos">R$ ${Number(e.preco_total).toFixed(2)}</span></div>
+    </div>`;
+  });
+  const totalGasto = entries.reduce((s,e)=>s+Number(e.preco_total),0);
+  html += `<div style="font-size:12px;color:var(--text2);margin:4px 0">Total da compra: <strong style="color:var(--accent)">R$ ${totalGasto.toFixed(2)}</strong></div>`;
+  html += `<div class="confirm-actions">
+    <button class="btn btn-confirm" onclick="confirmarCompra(${JSON.stringify(entries).replace(/"/g,'&quot;')})">✓ Confirmar</button>
+    <button class="btn btn-cancel" onclick="cancelar(this)">✕ Cancelar</button>
+  </div>`;
+  addMsg('agent', html);
+}
+
+async function confirmarCompra(entries){
+  const last = [...document.querySelectorAll('.msg.agent')].at(-1);
+  last.querySelector('.confirm-actions').innerHTML = '<em style="color:var(--text2);font-size:12px">Atualizando estoque...</em>';
+  const nfUrl = pendingNfUrl;
+  let ok=0, criados=0, errs=[];
+  for(const e of entries){
+    try{
+      // Busca se ingrediente já existe no estoque
+      const estoqueData = await notionReq('POST',`databases/${DB_ESTOQUE}/query`,{
+        filter:{property:'Ingrediente',title:{contains:e.ingrediente.split(' ')[0]}},page_size:5
+      });
+      // Tenta match por nome similar
+      let match = estoqueData.results.find(r=>{
+        const nome = r.properties['Ingrediente']?.title?.[0]?.plain_text?.toLowerCase()||'';
+        return nome.includes(e.ingrediente.toLowerCase().split(' ')[0]) ||
+               e.ingrediente.toLowerCase().includes(nome.split(' ')[0]);
+      });
+      if(match){
+        // Soma ao estoque existente
+        const atual = match.properties['Estoque comprado']?.number||0;
+        const precoAtual = match.properties['Preço total pago (R$)']?.number||0;
+        const props = {
+          'Estoque comprado':{number: atual + Number(e.quantidade)},
+          'Preço total pago (R$)':{number: precoAtual + Number(e.preco_total)},
+        };
+        if(nfUrl) props['url_nf'] = {url: nfUrl};
+        await notionPatch(match.id, props);
+        ok++;
+      } else {
+        // Cria novo ingrediente no estoque
+        const props = {
+          'Ingrediente':{title:[{text:{content:e.ingrediente}}]},
+          'Estoque comprado':{number:Number(e.quantidade)},
+          'Preço total pago (R$)':{number:Number(e.preco_total)},
+          'Unidade':{select:{name:e.unidade}},
+        };
+        if(nfUrl) props['url_nf']={url:nfUrl};
+        await notionReq('POST','pages',{parent:{database_id:DB_ESTOQUE},properties:props});
+        criados++; ok++;
+      }
+    } catch(err){ errs.push(e.ingrediente); }
+  }
+  last.innerHTML = ok>0
+    ? `✅ <strong>${ok}</strong> ingrediente(s) atualizado(s)! ${criados>0?`(${criados} novo(s) criado(s)) `:''}${errs.length?'⚠️ Falhou: '+errs.join(', '):''}`
+    : `⚠️ Erro ao atualizar estoque: ${errs.join(', ')}`;
+  pendingNfUrl = null;
+  if(ok>0) loadEstoqueData();
+}
+
+function cancelar(btn){
+  const msg = btn.closest('.msg.agent');
+  if(msg) msg.innerHTML = '❌ Cancelado.';
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD — VENDAS
+// ═══════════════════════════════════════════
+let dashData = [];
+
+async function loadDashData(){
+  if(!cfg.token) return;
+  const el = document.getElementById('dash-content');
+  if(el) el.innerHTML = '<div class="loading-dash">Carregando...</div>';
+  try{
+    const d = await notionReq('POST',`databases/${DB_VENDAS}/query`,{page_size:200});
+    // Busca nomes dos produtos
+    const prodsD = await notionReq('POST',`databases/${DB_PRODUTOS}/query`,{page_size:20});
+    const prodMap = {};
+    prodsD.results.forEach(p=>{ prodMap[p.id]=p.properties['Sabor']?.title?.[0]?.plain_text||''; });
+
+    dashData = d.results.map(p=>{
+      const pr = p.properties;
+      const prodIds = pr['Produtos']?.relation||[];
+      const sabor = prodIds.length ? (prodMap[prodIds[0].id]||'') : '';
+      return{
+        nome: pr['Name']?.title?.[0]?.plain_text||'',
+        cliente: pr['Cliente']?.rich_text?.[0]?.plain_text||'',
+        sabor,
+        qtd: pr['Quantidade']?.number||0,
+        status: pr['Status Pagamento']?.select?.name||'',
+        data: p.created_time?.split('T')[0]||'',
+        total: (pr['Quantidade']?.number||0)*15
+      };
+    });
+    renderDash();
+  } catch(e){ if(el) el.innerHTML=`<div class="loading-dash">Erro: ${e.message}</div>`; }
+}
+
+function renderDash(){
+  const start = document.getElementById('f-start')?.value||null;
+  const end = document.getElementById('f-end')?.value||null;
+  let data = dashData.filter(d=>{
+    if(start && d.data < start) return false;
+    if(end && d.data > end) return false;
+    return true;
+  });
+  const faturamento = data.reduce((s,d)=>s+d.total,0);
+  const totalCookies = data.reduce((s,d)=>s+d.qtd,0);
+  const pagos = data.filter(d=>d.status==='Pago');
+  const pendentes = data.filter(d=>d.status==='Pendente');
+  const recebido = pagos.reduce((s,d)=>s+d.total,0);
+  const aReceber = pendentes.reduce((s,d)=>s+d.total,0);
+  const ticketMedio = data.length ? (faturamento/data.length).toFixed(2) : '0.00';
+  const fmt = v=>v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  const kpi = `<div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Faturamento</div><div class="kpi-val ora">R$${fmt(faturamento)}</div><div class="kpi-sub">${data.length} pedido(s)</div></div>
+    <div class="kpi-card"><div class="kpi-label">Recebido</div><div class="kpi-val pos">R$${fmt(recebido)}</div><div class="kpi-sub">${pagos.length} pago(s)</div></div>
+    <div class="kpi-card"><div class="kpi-label">A Receber</div><div class="kpi-val neg">R$${fmt(aReceber)}</div><div class="kpi-sub">${pendentes.length} pendente(s)</div></div>
+    <div class="kpi-card"><div class="kpi-label">Cookies</div><div class="kpi-val neu">${totalCookies}</div><div class="kpi-sub">unidades vendidas</div></div>
+  </div>`;
+
+  // Gráfico de linha por mês
+  const byMes = {};
+  data.forEach(d=>{
+    const k = d.data.slice(0,7);
+    if(!byMes[k]) byMes[k]={fat:0,qtd:0};
+    byMes[k].fat += d.total; byMes[k].qtd += d.qtd;
+  });
+  const meses = Object.keys(byMes).sort();
+  const W=500,H=160,PL=70,PR=10,PT=12,PB=28,gw=W-PL-PR,gh=H-PT-PB;
+  const vals = meses.map(m=>byMes[m].fat);
+  const maxV = Math.max(...vals,1);
+  const px = i=>PL+i*(gw/Math.max(meses.length-1,1));
+  const py = v=>PT+gh*(1-v/maxV);
+  let path='',dots='';
+  meses.forEach((m,i)=>{
+    const v=byMes[m].fat;const cx=px(i).toFixed(1),cy=py(v).toFixed(1);
+    path+=(i===0?`M${cx},${cy}`:`L${cx},${cy}`);
+    dots+=`<circle cx="${cx}" cy="${cy}" r="4" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"
+      onmouseenter="showTip(event,'${m}','R$${v.toFixed(0)}')" onmouseleave="hideTip()"/>`;
+  });
+  const xLabels=meses.map((m,i)=>{
+    if(meses.length<=7||i%(Math.ceil(meses.length/6))===0)
+      return`<text x="${px(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="11" fill="var(--text3)">${m.slice(5)}</text>`;
+    return'';
+  }).join('');
+  const lineSvg = meses.length<1
+    ? '<div style="color:var(--text3);font-size:12px;padding:20px">Nenhuma venda no período</div>'
+    : `<svg class="line-svg" viewBox="0 0 ${W} ${H}" style="overflow:visible">
+        <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+gh}" stroke="var(--border)" stroke-width="1"/>
+        <path d="${path}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+        ${dots}${xLabels}
+      </svg>`;
+
+  // Donut por sabor
+  const bySabor={};
+  data.forEach(d=>{ if(d.sabor) bySabor[d.sabor]=(bySabor[d.sabor]||0)+d.qtd; });
+  const saborE = Object.entries(bySabor).sort((a,b)=>b[1]-a[1]);
+  const sTotal = saborE.reduce((s,[,v])=>s+v,0)||1;
+  let angle=-Math.PI/2, dPaths='';
+  saborE.forEach(([s,v],i)=>{
+    const slice=v/sTotal*2*Math.PI,c=DOT_COLORS[i%DOT_COLORS.length];
+    const x1=50+38*Math.cos(angle),y1=50+38*Math.sin(angle);
+    const x2=50+38*Math.cos(angle+slice),y2=50+38*Math.sin(angle+slice);
+    const xi=50+20*Math.cos(angle),yi=50+20*Math.sin(angle);
+    const x2i=50+20*Math.cos(angle+slice),y2i=50+20*Math.sin(angle+slice);
+    const large=slice>Math.PI?1:0;
+    dPaths+=`<path d="M${xi.toFixed(1)},${yi.toFixed(1)} A20,20 0 ${large},1 ${x2i.toFixed(1)},${y2i.toFixed(1)} L${x2.toFixed(1)},${y2.toFixed(1)} A38,38 0 ${large},0 ${x1.toFixed(1)},${y1.toFixed(1)} Z" fill="${c}" opacity=".85" onmouseenter="showTip(event,'${s}','${v} un')" onmouseleave="hideTip()" style="cursor:pointer"/>`;
+    angle+=slice;
+  });
+  const donutSvg = saborE.length
+    ? `<svg viewBox="0 0 100 100" width="110" height="110" style="flex-shrink:0">${dPaths}</svg>`
+    : '<div style="color:var(--text3);font-size:12px">Sem dados</div>';
+  const donutLeg = saborE.map(([s,v],i)=>`
+    <div class="donut-item">
+      <div class="donut-dot" style="background:${DOT_COLORS[i%DOT_COLORS.length]}"></div>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s}</span>
+      <span class="donut-val">${v}un · ${(v/sTotal*100).toFixed(0)}%</span>
+    </div>`).join('');
+
+  // Recentes
+  const recent = data.slice().sort((a,b)=>b.data.localeCompare(a.data)).slice(0,15);
+  const riRows = recent.length ? recent.map(d=>`
+    <div class="recent-item">
+      <div class="ri-left">
+        <span class="ri-name">${d.sabor||d.nome||'—'}${d.cliente?` · <span style="font-weight:400;color:var(--text2)">${d.cliente}</span>`:''}</span>
+        <span class="ri-meta">${d.qtd}un · ${d.data}</span>
+      </div>
+      <div class="ri-right">
+        <span class="ri-val" style="color:var(--accent)">R$${d.total.toFixed(2)}</span>
+        <span class="ri-status badge-${(d.status||'').toLowerCase()}">${d.status||''}</span>
+      </div>
+    </div>`).join('')
+    : '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Nenhuma venda no período</div>';
+
+  document.getElementById('dash-content').innerHTML = kpi + `
+  <div class="charts-grid">
+    <div class="chart-card" style="grid-column:1/-1"><h3>Faturamento por mês</h3>${lineSvg}</div>
+    <div class="chart-card"><h3>Por sabor</h3><div class="donut-wrap">${donutSvg}<div class="donut-legend">${donutLeg}</div></div></div>
+    <div class="chart-card"><h3>Status pagamentos</h3>
+      <div style="padding-top:6px">
+        ${['Pago','Pendente'].map(s=>{
+          const cnt=data.filter(d=>d.status===s).length;
+          const pct=data.length?(cnt/data.length*100).toFixed(0):0;
+          const c=s==='Pago'?'var(--success)':'var(--warn)';
+          return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px">
+            <span style="color:var(--text2);font-weight:600;width:70px">${s}</span>
+            <div style="flex:1;height:6px;background:var(--bg4);border-radius:3px;margin:0 10px">
+              <div style="width:${pct}%;height:100%;border-radius:3px;background:${c}"></div>
+            </div>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text)">${cnt} (${pct}%)</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="recent-list"><h3>Vendas recentes</h3>${riRows}</div>`;
+}
+
+// ═══════════════════════════════════════════
+// ESTOQUE
+// ═══════════════════════════════════════════
+async function loadEstoqueData(){
+  if(!cfg.token) return;
+  const el = document.getElementById('estoque-content');
+  if(el) el.innerHTML='<div class="loading-dash">Carregando...</div>';
+  try{
+    const [estoqueD, comprasD] = await Promise.all([
+      notionReq('POST',`databases/${DB_ESTOQUE}/query`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
+      notionReq('POST',`databases/${DB_ESTOQUE}/query`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
+    ]);
+    const itens = estoqueD.results.map(p=>({
+      id: p.id,
+      nome: p.properties['Ingrediente']?.title?.[0]?.plain_text||'',
+      estoque: p.properties['Estoque comprado']?.number||0,
+      minimo: p.properties['Estoque mínimo']?.number||null,
+      unidade: p.properties['Unidade']?.select?.name||'',
+      preco: p.properties['Preço total pago (R$)']?.number||0,
+      url_nf: p.properties['url_nf']?.url||null,
+    }));
+
+    const tabRows = itens.map(i=>{
+      let statusBadge='', statusClass='badge-zero';
+      if(i.minimo!==null){
+        if(i.estoque<=0){ statusBadge='⛔ Zerado'; statusClass='badge-low'; }
+        else if(i.estoque<=i.minimo){ statusBadge='⚠️ Baixo'; statusClass='badge-low'; }
+        else{ statusBadge='✅ OK'; statusClass='badge-ok'; }
+      } else {
+        statusBadge=i.estoque>0?'—':'⛔'; statusClass=i.estoque>0?'badge-zero':'badge-low';
+      }
+      const custoUn = i.estoque>0 && i.preco>0 ? (i.preco/i.estoque).toFixed(4) : '—';
+      return`<tr>
+        <td style="font-weight:700">${i.nome||'—'}</td>
+        <td style="font-family:var(--mono)">${i.estoque} ${i.unidade}</td>
+        <td style="font-family:var(--mono)">${i.minimo!==null?i.minimo+' '+i.unidade:'—'}</td>
+        <td class="${statusClass}">${statusBadge}</td>
+        <td style="font-family:var(--mono);color:var(--text2)">R$${custoUn}/un</td>
+      </tr>`;
+    }).join('');
+
+    // Lista de compras — agrupa por URL de NF
+    const comItensNF = itens.filter(i=>i.url_nf);
+    const nfGroups={};
+    comItensNF.forEach(i=>{
+      if(!nfGroups[i.url_nf]) nfGroups[i.url_nf]=[];
+      nfGroups[i.url_nf].push(i);
+    });
+    const comprasHtml = Object.entries(nfGroups).length
+      ? Object.entries(nfGroups).map(([url,items])=>{
+          const totalNF = items.reduce((s,i)=>s+i.preco,0);
+          return`<div class="compra-item">
+            <div class="compra-left">
+              <div class="compra-nome">${items.map(i=>i.nome).join(' + ')}</div>
+              <div class="compra-meta">${items.map(i=>`${i.estoque}${i.unidade} ${i.nome}`).join(' · ')}</div>
+            </div>
+            <div class="compra-right">
+              <span class="compra-val">R$ ${totalNF.toFixed(2)}</span>
+              <a class="nf-link" href="${url}" target="_blank">🧾 Ver NF</a>
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="color:var(--text3);font-size:13px;padding:12px 0">Nenhuma NF registrada ainda.</div>';
+
+    const alertas = itens.filter(i=>i.minimo!==null && i.estoque<=i.minimo);
+    const alertaHtml = alertas.length
+      ? `<div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:13px">
+          ⚠️ <strong>${alertas.length} ingrediente(s) abaixo do mínimo:</strong> ${alertas.map(a=>a.nome).join(', ')}
+        </div>` : '';
+
+    el.innerHTML = alertaHtml + `
+    <div class="section-title">Ingredientes em estoque</div>
+    <div style="overflow-x:auto;margin-bottom:18px">
+      <table class="estoque-table">
+        <thead><tr><th>Ingrediente</th><th>Estoque</th><th>Mínimo</th><th>Status</th><th>Custo/un</th></tr></thead>
+        <tbody>${tabRows||'<tr><td colspan="5" style="color:var(--text3);text-align:center;padding:24px">Nenhum ingrediente cadastrado</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="section-title">Histórico de compras (por NF)</div>
+    <div class="compras-list">${comprasHtml}</div>`;
+  } catch(e){ if(el) el.innerHTML=`<div class="loading-dash">Erro: ${e.message}</div>`; }
+}
+
+// ═══════════════════════════════════════════
+// TOOLTIP
+// ═══════════════════════════════════════════
+function showTip(e,label,val){
+  const t=document.getElementById('chart-tip');
+  t.innerHTML=`<strong style="color:var(--accent)">${label}</strong><br>${val}`;
+  t.style.display='block';
+  const cx=e.clientX,cy=e.clientY;
+  t.style.left=Math.min(cx+14,window.innerWidth-140)+'px';
+  t.style.top=Math.max(8,cy-60)+'px';
+}
+function hideTip(){ document.getElementById('chart-tip').style.display='none'; }
+document.addEventListener('scroll',hideTip,true);
+</script>
+</body>
+</html>
