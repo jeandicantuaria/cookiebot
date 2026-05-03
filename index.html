@@ -572,9 +572,9 @@ async function runAnalise(q){
   try{
     // Busca dados das 3 bases
     const [vendas, producao, estoque] = await Promise.all([
-      notionReq('POST',`databases/${DB_VENDAS}/query`,{page_size:200}),
-      notionReq('POST',`databases/${DB_PRODUCAO}/query`,{page_size:200}),
-      notionReq('POST',`databases/${DB_ESTOQUE}/query`,{page_size:200}),
+      notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{page_size:200}),
+      notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{page_size:200}),
+      notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{page_size:200}),
     ]);
 
     const vRows = vendas.results.map(p=>({
@@ -684,7 +684,7 @@ async function confirmarVenda(entries){
   for(const e of entries){
     try{
       // Busca ID do produto pelo sabor
-      const prods = await notionReq('POST',`databases/${DB_PRODUTOS}/query`,{
+      const prods = await notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{
         filter:{property:'Sabor',title:{equals:e.sabor}},page_size:1
       });
       const prodId = prods.results?.[0]?.id;
@@ -733,7 +733,7 @@ async function confirmarProducao(sabor, qtdReceitas){
   last.querySelector('.confirm-actions').innerHTML = '<em style="color:var(--text2);font-size:12px">Salvando e deduzindo estoque...</em>';
   try{
     // 1. Busca produto
-    const prods = await notionReq('POST',`databases/${DB_PRODUTOS}/query`,{
+    const prods = await notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{
       filter:{property:'Sabor',title:{equals:sabor}},page_size:1
     });
     const prodId = prods.results?.[0]?.id;
@@ -748,7 +748,7 @@ async function confirmarProducao(sabor, qtdReceitas){
 
     // 3. Deduz estoque — busca receita base do sabor
     const saborMap = {'Nutella':'Nutella','Kinder Bueno':'Kinder Bueno','Red Velvet':'Red Velvet'};
-    const receitas = await notionReq('POST',`databases/${DB_RECEITA}/query`,{
+    const receitas = await notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{
       filter:{property:'Sabor',multi_select:{contains:saborMap[sabor]||sabor}},
       page_size:50
     });
@@ -822,7 +822,7 @@ async function confirmarCompra(entries){
   for(const e of entries){
     try{
       // Busca se ingrediente já existe no estoque
-      const estoqueData = await notionReq('POST',`databases/${DB_ESTOQUE}/query`,{
+      const estoqueData = await notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{
         filter:{property:'Ingrediente',title:{contains:e.ingrediente.split(' ')[0]}},page_size:5
       });
       // Tenta match por nome similar
@@ -878,9 +878,9 @@ async function loadDashData(){
   const el = document.getElementById('dash-content');
   if(el) el.innerHTML = '<div class="loading-dash">Carregando...</div>';
   try{
-    const d = await notionReq('POST',`databases/${DB_VENDAS}/query`,{page_size:200});
+    const d = await notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{page_size:200});
     // Busca nomes dos produtos
-    const prodsD = await notionReq('POST',`databases/${DB_PRODUTOS}/query`,{page_size:20});
+    const prodsD = await notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{page_size:20});
     const prodMap = {};
     prodsD.results.forEach(p=>{ prodMap[p.id]=p.properties['Sabor']?.title?.[0]?.plain_text||''; });
 
@@ -1033,8 +1033,8 @@ async function loadEstoqueData(){
   if(el) el.innerHTML='<div class="loading-dash">Carregando...</div>';
   try{
     const [estoqueD, comprasD] = await Promise.all([
-      notionReq('POST',`databases/${DB_ESTOQUE}/query`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
-      notionReq('POST',`databases/${DB_ESTOQUE}/query`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
+      notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
+      notionReq('POST',`databases/0e7096f1-8861-45a3-893b-b6cdf8a1106c/query`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
     ]);
     const itens = estoqueD.results.map(p=>({
       id: p.id,
