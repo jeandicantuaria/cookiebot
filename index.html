@@ -1033,8 +1033,8 @@ async function loadEstoqueData(){
   if(el) el.innerHTML='<div class="loading-dash">Carregando...</div>';
   try{
     const [estoqueD, comprasD] = await Promise.all([
-      notionReq('POST',`search`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
-      notionReq('POST',`search`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
+      notionReq('POST',`search`,{page_size:100}),
+      notionReq('POST',`search`,{page_size:100}),
     ]);
     const itens = estoqueD.results.map(p=>({
       id: p.id,
