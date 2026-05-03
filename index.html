@@ -425,9 +425,9 @@ async function notionReq(method, path, body){
 
 async function notionPatch(pageId, props){
   const res = await fetch('/api/notion', {
-    method: 'PATCH',
+    method: 'POST',
     headers: { 'Content-Type':'application/json', 'x-notion-token': cfg.token },
-    body: JSON.stringify({ _path: `pages/${pageId}`, properties: props })
+    body: JSON.stringify({ _path: `pages/${pageId}`, _method: 'PATCH', properties: props })
   });
   return res.json();
 }
