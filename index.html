@@ -574,7 +574,7 @@ async function runAnalise(q){
     const [vendas, producao, estoque] = await Promise.all([
       notionReq('POST',`databases/${DB_VENDAS}/query`,{page_size:200}),
       notionReq('POST',`databases/${DB_PRODUCAO}/query`,{page_size:200}),
-      notionReq('POST',`databases/${DB_ESTOQUE}/query`,{page_size:200}),
+      notionReq('POST',`search`,{page_size:200}),
     ]);
 
     const vRows = vendas.results.map(p=>({
@@ -822,7 +822,7 @@ async function confirmarCompra(entries){
   for(const e of entries){
     try{
       // Busca se ingrediente já existe no estoque
-      const estoqueData = await notionReq('POST',`databases/${DB_ESTOQUE}/query`,{
+      const estoqueData = await notionReq('POST',`search`,{
         filter:{property:'Ingrediente',title:{contains:e.ingrediente.split(' ')[0]}},page_size:5
       });
       // Tenta match por nome similar
@@ -1033,8 +1033,8 @@ async function loadEstoqueData(){
   if(el) el.innerHTML='<div class="loading-dash">Carregando...</div>';
   try{
     const [estoqueD, comprasD] = await Promise.all([
-      notionReq('POST',`databases/${DB_ESTOQUE}/query`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
-      notionReq('POST',`databases/${DB_ESTOQUE}/query`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
+      notionReq('POST',`search`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
+      notionReq('POST',`search`,{page_size:100,sorts:[{property:'Ingrediente',direction:'ascending'}]}),
     ]);
     const itens = estoqueD.results.map(p=>({
       id: p.id,
