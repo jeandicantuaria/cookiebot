@@ -412,7 +412,7 @@ function showTab(t){
 // NOTION API
 // ═══════════════════════════════════════════
 async function notionReq(method, path, body){
-  const payload = { _path: path, ...(body||{}) };
+  const payload = { _path: path, _method: method, ...(body||{}) };
   const res = await fetch('/api/notion', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'x-notion-token': cfg.token },
@@ -430,6 +430,31 @@ async function notionPatch(pageId, props){
     body: JSON.stringify({ _path: `pages/${pageId}`, _method: 'PATCH', properties: props })
   });
   return res.json();
+}
+
+// Busca todas as páginas do workspace via /search (com paginação)
+async function searchPages(pageSize = 200) {
+  const all = [];
+  let cursor = null;
+  do {
+    const body = { filter: { property: 'object', value: 'page' }, page_size: pageSize };
+    if (cursor) body.start_cursor = cursor;
+    const d = await notionReq('POST', 'search', body);
+    all.push(...(d.results || []));
+    cursor = d.has_more ? d.next_cursor : null;
+  } while (cursor && all.length < 500);
+  return all;
+}
+
+// Identifica a qual "database" uma página pertence pelas suas propriedades únicas
+function pageType(p) {
+  const props = p.properties || {};
+  if (props['Estoque comprado'] !== undefined)              return 'estoque';
+  if (props['Status Pagamento'] !== undefined)              return 'venda';
+  if (props['Quantidade Produzida'] !== undefined)          return 'producao';
+  if (props['Qtd por receita (12 cookies)'] !== undefined) return 'receita';
+  if (props['Sabor'] !== undefined)                        return 'produto';
+  return null;
 }
 
 // ═══════════════════════════════════════════
@@ -570,12 +595,11 @@ async function extractCompra(text, fileData){
 async function runAnalise(q){
   addTyping();
   try{
-    // Busca dados das 3 bases
-    const [vendas, producao, estoque] = await Promise.all([
-      notionReq('POST',`databases/${DB_VENDAS}/query`,{page_size:200}),
-      notionReq('POST',`databases/${DB_PRODUCAO}/query`,{page_size:200}),
-      notionReq('POST',`search`,{page_size:200}),
-    ]);
+    // Busca todos os dados via search e filtra por tipo
+    const _pages = await searchPages(200);
+    const vendas   = { results: _pages.filter(p => pageType(p) === 'venda') };
+    const producao = { results: _pages.filter(p => pageType(p) === 'producao') };
+    const estoque  = { results: _pages.filter(p => pageType(p) === 'estoque') };
 
     const vRows = vendas.results.map(p=>({
       cliente: p.properties['Cliente']?.rich_text?.[0]?.plain_text||'',
@@ -680,14 +704,13 @@ async function fluxoVenda(text){
 async function confirmarVenda(entries){
   const last = [...document.querySelectorAll('.msg.agent')].at(-1);
   last.querySelector('.confirm-actions').innerHTML = '<em style="color:var(--text2);font-size:12px">Salvando...</em>';
+  const prodPages = (await searchPages(100)).filter(p => pageType(p) === 'produto');
   let ok=0, errs=[];
   for(const e of entries){
     try{
-      // Busca ID do produto pelo sabor
-      const prods = await notionReq('POST',`databases/${DB_PRODUTOS}/query`,{
-        filter:{property:'Sabor',title:{equals:e.sabor}},page_size:1
-      });
-      const prodId = prods.results?.[0]?.id;
+      const prodId = prodPages.find(p =>
+        p.properties['Sabor']?.title?.[0]?.plain_text === e.sabor
+      )?.id;
       const props = {
         'Name':{title:[{text:{content:`${e.sabor} — ${e.cliente||'Cliente'} — ${new Date().toLocaleDateString('pt-BR')}`}}]},
         'Quantidade':{number:e.quantidade},
@@ -732,11 +755,13 @@ async function confirmarProducao(sabor, qtdReceitas){
   const last = [...document.querySelectorAll('.msg.agent')].at(-1);
   last.querySelector('.confirm-actions').innerHTML = '<em style="color:var(--text2);font-size:12px">Salvando e deduzindo estoque...</em>';
   try{
-    // 1. Busca produto
-    const prods = await notionReq('POST',`databases/${DB_PRODUTOS}/query`,{
-      filter:{property:'Sabor',title:{equals:sabor}},page_size:1
-    });
-    const prodId = prods.results?.[0]?.id;
+    const allPages = await searchPages(200);
+
+    // 1. Busca produto pelo sabor
+    const prodId = allPages.find(p =>
+      pageType(p) === 'produto' &&
+      p.properties['Sabor']?.title?.[0]?.plain_text === sabor
+    )?.id;
 
     // 2. Registra produção
     const props = {
@@ -746,24 +771,22 @@ async function confirmarProducao(sabor, qtdReceitas){
     if(prodId) props['Produtos']={relation:[{id:prodId}]};
     await notionReq('POST','pages',{parent:{database_id:DB_PRODUCAO},properties:props});
 
-    // 3. Deduz estoque — busca receita base do sabor
-    const saborMap = {'Nutella':'Nutella','Kinder Bueno':'Kinder Bueno','Red Velvet':'Red Velvet'};
-    const receitas = await notionReq('POST',`databases/${DB_RECEITA}/query`,{
-      filter:{property:'Sabor',multi_select:{contains:saborMap[sabor]||sabor}},
-      page_size:50
-    });
+    // 3. Deduz estoque — busca receita base pelo sabor nas páginas já carregadas
+    const receitaPages = allPages.filter(p =>
+      pageType(p) === 'receita' &&
+      p.properties['Sabor']?.multi_select?.some(s => s.name === sabor)
+    );
 
     let deduzidos = 0;
-    for(const rec of receitas.results){
+    for(const rec of receitaPages){
       const qtdPorReceita = rec.properties['Qtd por receita (12 cookies)']?.number||0;
       const estoqueRel = rec.properties['Estoque']?.relation||[];
       if(!estoqueRel.length || !qtdPorReceita) continue;
       for(const estoqueRef of estoqueRel){
-        // Busca estoque atual
-        const estoqueItem = await notionReq('GET',`pages/${estoqueRef.id}`,null);
-        const estoqueAtual = estoqueItem.properties?.['Estoque comprado']?.number||0;
+        // Usa a página de estoque já carregada (evita GET individual)
+        const estoqueItem = allPages.find(p => p.id === estoqueRef.id);
+        const estoqueAtual = estoqueItem?.properties?.['Estoque comprado']?.number||0;
         const novoEstoque = Math.max(0, estoqueAtual - (qtdPorReceita * qtdReceitas));
-        // Atualiza
         await notionPatch(estoqueRef.id,{'Estoque comprado':{number:novoEstoque}});
         deduzidos++;
       }
@@ -818,18 +841,14 @@ async function confirmarCompra(entries){
   const last = [...document.querySelectorAll('.msg.agent')].at(-1);
   last.querySelector('.confirm-actions').innerHTML = '<em style="color:var(--text2);font-size:12px">Atualizando estoque...</em>';
   const nfUrl = pendingNfUrl;
+  const estoquePages = (await searchPages(100)).filter(p => pageType(p) === 'estoque');
   let ok=0, criados=0, errs=[];
   for(const e of entries){
     try{
-      // Busca se ingrediente já existe no estoque
-      const estoqueData = await notionReq('POST',`search`,{
-        filter:{property:'Ingrediente',title:{contains:e.ingrediente.split(' ')[0]}},page_size:5
-      });
-      // Tenta match por nome similar
-      let match = estoqueData.results.find(r=>{
+      const firstWord = e.ingrediente.toLowerCase().split(' ')[0];
+      let match = estoquePages.find(r=>{
         const nome = r.properties['Ingrediente']?.title?.[0]?.plain_text?.toLowerCase()||'';
-        return nome.includes(e.ingrediente.toLowerCase().split(' ')[0]) ||
-               e.ingrediente.toLowerCase().includes(nome.split(' ')[0]);
+        return nome.includes(firstWord) || e.ingrediente.toLowerCase().includes(nome.split(' ')[0]);
       });
       if(match){
         // Soma ao estoque existente
@@ -878,13 +897,12 @@ async function loadDashData(){
   const el = document.getElementById('dash-content');
   if(el) el.innerHTML = '<div class="loading-dash">Carregando...</div>';
   try{
-    const d = await notionReq('POST',`databases/${DB_VENDAS}/query`,{page_size:200});
-    // Busca nomes dos produtos
-    const prodsD = await notionReq('POST',`databases/${DB_PRODUTOS}/query`,{page_size:20});
+    const allPages = await searchPages(200);
     const prodMap = {};
-    prodsD.results.forEach(p=>{ prodMap[p.id]=p.properties['Sabor']?.title?.[0]?.plain_text||''; });
+    allPages.filter(p => pageType(p) === 'produto')
+            .forEach(p => { prodMap[p.id] = p.properties['Sabor']?.title?.[0]?.plain_text||''; });
 
-    dashData = d.results.map(p=>{
+    dashData = allPages.filter(p => pageType(p) === 'venda').map(p=>{
       const pr = p.properties;
       const prodIds = pr['Produtos']?.relation||[];
       const sabor = prodIds.length ? (prodMap[prodIds[0].id]||'') : '';
@@ -1032,11 +1050,8 @@ async function loadEstoqueData(){
   const el = document.getElementById('estoque-content');
   if(el) el.innerHTML='<div class="loading-dash">Carregando...</div>';
   try{
-    const [estoqueD, comprasD] = await Promise.all([
-      notionReq('POST',`search`,{page_size:100}),
-      notionReq('POST',`search`,{page_size:100}),
-    ]);
-    const itens = estoqueD.results.map(p=>({
+    const allPages = await searchPages(100);
+    const itens = allPages.filter(p => pageType(p) === 'estoque').map(p=>({
       id: p.id,
       nome: p.properties['Ingrediente']?.title?.[0]?.plain_text||'',
       estoque: p.properties['Estoque comprado']?.number||0,
