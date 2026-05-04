@@ -433,7 +433,7 @@ async function notionPatch(pageId, props){
 }
 
 // Busca todas as páginas do workspace via /search (com paginação)
-async function searchPages(pageSize = 200) {
+async function searchPages(pageSize = 100) {
   const all = [];
   let cursor = null;
   do {
@@ -893,21 +893,21 @@ function cancelar(btn){
 let dashData = [];
 
 async function loadDashData(){
-  if(!cfg.token) return;
   const el = document.getElementById('dash-content');
+  if(!cfg.token){
+    if(el) el.innerHTML='<div class="loading-dash">⚙️ Configure seu <strong>Notion Token</strong> em API Settings para ver o dashboard.</div>';
+    return;
+  }
   if(el) el.innerHTML = '<div class="loading-dash">Carregando...</div>';
   try{
-    const allPages = await searchPages(200);
-    const prodMap = {};
-    allPages.filter(p => pageType(p) === 'produto')
-            .forEach(p => { prodMap[p.id] = p.properties['Sabor']?.title?.[0]?.plain_text||''; });
-
+    const allPages = await searchPages(100);
+    // Sabor vem do título "Sabor — Cliente — Data" pois DB_PRODUTOS não é acessível via API
     dashData = allPages.filter(p => pageType(p) === 'venda').map(p=>{
       const pr = p.properties;
-      const prodIds = pr['Produtos']?.relation||[];
-      const sabor = prodIds.length ? (prodMap[prodIds[0].id]||'') : '';
+      const nome = pr['Name']?.title?.[0]?.plain_text||'';
+      const sabor = nome.split('—')[0].trim();
       return{
-        nome: pr['Name']?.title?.[0]?.plain_text||'',
+        nome,
         cliente: pr['Cliente']?.rich_text?.[0]?.plain_text||'',
         sabor,
         qtd: pr['Quantidade']?.number||0,
@@ -917,7 +917,7 @@ async function loadDashData(){
       };
     });
     renderDash();
-  } catch(e){ if(el) el.innerHTML=`<div class="loading-dash">Erro: ${e.message}</div>`; }
+  } catch(e){ if(el) el.innerHTML=`<div class="loading-dash">❌ Erro: ${e.message}</div>`; }
 }
 
 function renderDash(){
@@ -1046,8 +1046,11 @@ function renderDash(){
 // ESTOQUE
 // ═══════════════════════════════════════════
 async function loadEstoqueData(){
-  if(!cfg.token) return;
   const el = document.getElementById('estoque-content');
+  if(!cfg.token){
+    if(el) el.innerHTML='<div class="loading-dash">⚙️ Configure seu <strong>Notion Token</strong> em API Settings para ver o estoque.</div>';
+    return;
+  }
   if(el) el.innerHTML='<div class="loading-dash">Carregando...</div>';
   try{
     const allPages = await searchPages(100);
